@@ -2,6 +2,7 @@ package appstore
 
 import (
 	"errors"
+	gohttp "net/http"
 
 	"github.com/majd/ipatool/v2/pkg/http"
 	"github.com/majd/ipatool/v2/pkg/util/machine"
@@ -13,6 +14,7 @@ import (
 var _ = Describe("AppStore (ListVersions)", func() {
 	var (
 		ctrl               *gomock.Controller
+		mockBagClient      *http.MockClient[bagResult]
 		mockDownloadClient *http.MockClient[downloadResult]
 		mockMachine        *machine.MockMachine
 		as                 AppStore
@@ -20,9 +22,11 @@ var _ = Describe("AppStore (ListVersions)", func() {
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
+		mockBagClient = http.NewMockClient[bagResult](ctrl)
 		mockDownloadClient = http.NewMockClient[downloadResult](ctrl)
 		mockMachine = machine.NewMockMachine(ctrl)
 		as = &appstore{
+			bagClient:      mockBagClient,
 			downloadClient: mockDownloadClient,
 			machine:        mockMachine,
 		}
@@ -209,9 +213,17 @@ var _ = Describe("AppStore (ListVersions)", func() {
 			mockDownloadClient.EXPECT().
 				Send(gomock.Any()).
 				Return(http.Result[downloadResult]{
+					StatusCode: gohttp.StatusOK,
 					Data: downloadResult{
 						Items: []downloadItemResult{},
 					},
+				}, nil)
+
+			mockBagClient.EXPECT().
+				Send(gomock.Any()).
+				Return(http.Result[bagResult]{
+					StatusCode: gohttp.StatusOK,
+					Data:       validBagResult(),
 				}, nil)
 		})
 

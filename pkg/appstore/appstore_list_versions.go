@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/majd/ipatool/v2/pkg/http"
 )
 
 type ListVersionsInput struct {
@@ -26,11 +24,9 @@ func (t *appstore) ListVersions(input ListVersionsInput) (ListVersionsOutput, er
 
 	guid := strings.ReplaceAll(strings.ToUpper(macAddr), ":", "")
 
-	req := t.listVersionsRequest(input.Account, input.App, guid)
-	res, err := t.downloadClient.Send(req)
-
+	res, err := t.sendDownloadProduct(input.Account, input.App, guid, "")
 	if err != nil {
-		return ListVersionsOutput{}, fmt.Errorf("failed to send http request: %w", err)
+		return ListVersionsOutput{}, err
 	}
 
 	if res.Data.FailureType == FailureTypePasswordTokenExpired || res.Data.FailureType == FailureTypeSignInRequired {
@@ -74,32 +70,4 @@ func (t *appstore) ListVersions(input ListVersionsInput) (ListVersionsOutput, er
 		ExternalVersionIdentifiers: externalVersionIdentifiers,
 		LatestExternalVersionID:    fmt.Sprintf("%v", latestExternalVersionID),
 	}, nil
-}
-
-func (t *appstore) listVersionsRequest(acc Account, app App, guid string) http.Request {
-	payload := map[string]interface{}{
-		"creditDisplay": "",
-		"guid":          guid,
-		"salableAdamId": app.ID,
-		"serialNumber":  "0",
-	}
-
-	podPrefix := ""
-	if acc.Pod != "" {
-		podPrefix = "p" + acc.Pod + "-"
-	}
-
-	return http.Request{
-		URL:            fmt.Sprintf("https://%s%s%s?guid=%s", podPrefix, PrivateAppStoreAPIDomain, PrivateAppStoreAPIPathDownload, guid),
-		Method:         http.MethodPOST,
-		ResponseFormat: http.ResponseFormatXML,
-		Headers: map[string]string{
-			"Content-Type": "application/x-apple-plist",
-			"iCloud-DSID":  acc.DirectoryServicesID,
-			"X-Dsid":       acc.DirectoryServicesID,
-		},
-		Payload: &http.XMLPayload{
-			Content: payload,
-		},
-	}
 }

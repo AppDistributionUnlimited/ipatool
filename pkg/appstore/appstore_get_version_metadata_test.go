@@ -171,6 +171,7 @@ var _ = Describe("AppStore (GetVersionMetadata)", func() {
 	var (
 		ctrl               *gomock.Controller
 		mockMachine        *machine.MockMachine
+		mockBagClient      *http.MockClient[bagResult]
 		mockDownloadClient *http.MockClient[downloadResult]
 		as                 AppStore
 	)
@@ -178,9 +179,11 @@ var _ = Describe("AppStore (GetVersionMetadata)", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockMachine = machine.NewMockMachine(ctrl)
+		mockBagClient = http.NewMockClient[bagResult](ctrl)
 		mockDownloadClient = http.NewMockClient[downloadResult](ctrl)
 		as = &appstore{
 			machine:        mockMachine,
+			bagClient:      mockBagClient,
 			downloadClient: mockDownloadClient,
 			httpClient:     http.NewClient[interface{}](http.Args{}),
 		}
@@ -370,9 +373,17 @@ var _ = Describe("AppStore (GetVersionMetadata)", func() {
 			mockDownloadClient.EXPECT().
 				Send(gomock.Any()).
 				Return(http.Result[downloadResult]{
+					StatusCode: gohttp.StatusOK,
 					Data: downloadResult{
 						Items: []downloadItemResult{},
 					},
+				}, nil)
+
+			mockBagClient.EXPECT().
+				Send(gomock.Any()).
+				Return(http.Result[bagResult]{
+					StatusCode: gohttp.StatusOK,
+					Data:       validBagResult(),
 				}, nil)
 		})
 

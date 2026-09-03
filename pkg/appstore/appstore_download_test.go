@@ -38,6 +38,7 @@ var _ = Describe("AppStore (Download)", func() {
 	var (
 		ctrl                 *gomock.Controller
 		mockKeychain         *keychain.MockKeychain
+		mockBagClient        *http.MockClient[bagResult]
 		mockDownloadClient   *http.MockClient[downloadResult]
 		mockPlatformClient   *http.MockClient[platformVersionLookupResult]
 		mockStorefrontClient *http.MockClient[[]byte]
@@ -52,6 +53,7 @@ var _ = Describe("AppStore (Download)", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockKeychain = keychain.NewMockKeychain(ctrl)
+		mockBagClient = http.NewMockClient[bagResult](ctrl)
 		mockDownloadClient = http.NewMockClient[downloadResult](ctrl)
 		mockPlatformClient = http.NewMockClient[platformVersionLookupResult](ctrl)
 		mockStorefrontClient = http.NewMockClient[[]byte](ctrl)
@@ -62,6 +64,7 @@ var _ = Describe("AppStore (Download)", func() {
 		mockMachine = machine.NewMockMachine(ctrl)
 		as = &appstore{
 			keychain:         mockKeychain,
+			bagClient:        mockBagClient,
 			loginClient:      mockLoginClient,
 			purchaseClient:   mockPurchaseClient,
 			downloadClient:   mockDownloadClient,
@@ -406,9 +409,17 @@ var _ = Describe("AppStore (Download)", func() {
 			mockDownloadClient.EXPECT().
 				Send(gomock.Any()).
 				Return(http.Result[downloadResult]{
+					StatusCode: gohttp.StatusOK,
 					Data: downloadResult{
 						Items: []downloadItemResult{},
 					},
+				}, nil)
+
+			mockBagClient.EXPECT().
+				Send(gomock.Any()).
+				Return(http.Result[bagResult]{
+					StatusCode: gohttp.StatusOK,
+					Data:       validBagResult(),
 				}, nil)
 		})
 

@@ -26,6 +26,9 @@ const (
 	PrivateAppStoreAPIPathPurchase = "/WebObjects/MZFinance.woa/wa/buyProduct"
 	PrivateAppStoreAPIPathDownload = "/WebObjects/MZFinance.woa/wa/volumeStoreDownloadProduct"
 
+	PrivateAppStoreRedownloadDomain = "downloaddispatch." + iTunesAPIDomain
+	PrivateAppStoreRedownloadPath   = "/r/redownload"
+
 	PrivatePurchaseDAAPBaseURL = "https://pd.itunes.apple.com/WebObjects/MZPurchaseDaap.woa/purchase"
 
 	HTTPHeaderStoreFront = "X-Set-Apple-Store-Front"

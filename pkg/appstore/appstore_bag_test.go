@@ -87,6 +87,9 @@ var _ = Describe("AppStore (Bag)", func() {
 
 	When("request contains valid SAP configuration", func() {
 		BeforeEach(func() {
+			result := validBagResult()
+			result.URLBag.RedownloadEndpoint = testRedownloadEndpoint
+
 			mockMachine.EXPECT().
 				MacAddress().
 				Return("aa:bb:cc:dd:ee:ff", nil)
@@ -101,7 +104,7 @@ var _ = Describe("AppStore (Bag)", func() {
 				}).
 				Return(http.Result[bagResult]{
 					StatusCode: gohttp.StatusOK,
-					Data:       validBagResult(),
+					Data:       result,
 				}, nil)
 		})
 
@@ -109,6 +112,7 @@ var _ = Describe("AppStore (Bag)", func() {
 			out, err := as.Bag(BagInput{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out.SAPConfig).To(Equal(validSAPConfig()))
+			Expect(out.RedownloadEndpoint).To(Equal(testRedownloadEndpoint))
 		})
 	})
 
@@ -161,6 +165,7 @@ var _ = Describe("AppStore (Bag)", func() {
 
 const (
 	testAuthEndpoint         = "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/authenticate"
+	testRedownloadEndpoint   = "https://downloaddispatch.itunes.apple.com/r/redownload"
 	testSAPSetupEndpoint     = "https://fpinit.example.com/v1/signSapSetup/legacy"
 	testSAPSetupCertEndpoint = "https://static.example.com/sap/setupCert.plist"
 	testSAPVersion           = "200"
