@@ -1,6 +1,7 @@
 package appstore
 
 import (
+	"errors"
 	"fmt"
 	gohttp "net/http"
 	"net/url"
@@ -19,7 +20,7 @@ type downloadProductEndpoint struct {
 	versionKey string
 }
 
-func (t *appstore) sendDownloadProduct(acc Account, app App, guid, externalVersionID string) (http.Result[downloadResult], error) {
+func (t *appstore) sendDownloadProduct(acc Account, app App, guid, externalVersionID string, platform Platform) (http.Result[downloadResult], error) {
 	volumeStore := t.volumeStoreEndpoint(acc)
 
 	res, err := t.downloadClient.Send(t.downloadProductRequest(volumeStore, acc, app, guid, externalVersionID))
@@ -49,6 +50,33 @@ func (t *appstore) sendDownloadProduct(acc Account, app App, guid, externalVersi
 
 	redownloadRes, err := t.downloadClient.Send(t.downloadProductRequest(redownload, acc, app, guid, externalVersionID))
 	if err != nil {
+		var responseErr *http.UnexpectedResponseError
+
+		canResolveLatestVersion := externalVersionID == "" &&
+			(platform == "" || platform == PlatformIPhone || platform == PlatformIPad)
+
+		if canResolveLatestVersion && errors.As(err, &responseErr) &&
+			responseErr.StatusCode == gohttp.StatusInternalServerError && responseErr.Snippet == "" {
+			// The unpinned redownload request can fail even when Apple's catalog
+			// advertises a downloadable iOS build (issue #547). Retry that exact
+			// build once, without replacing an explicitly requested version.
+			if platform == "" {
+				platform = PlatformIPhone
+			}
+
+			versionID, lookupErr := t.lookupLatestExternalVersionID(acc, app, platform)
+			if lookupErr != nil {
+				return redownloadRes, fmt.Errorf("failed to resolve latest version for redownload: %w (original error: %w)", lookupErr, err)
+			}
+
+			pinnedRes, pinnedErr := t.downloadClient.Send(t.downloadProductRequest(redownload, acc, app, guid, versionID))
+			if pinnedErr != nil {
+				return pinnedRes, fmt.Errorf("failed to send version-pinned redownload request: %w", pinnedErr)
+			}
+
+			return pinnedRes, nil
+		}
+
 		return redownloadRes, fmt.Errorf("failed to send redownload request: %w", err)
 	}
 

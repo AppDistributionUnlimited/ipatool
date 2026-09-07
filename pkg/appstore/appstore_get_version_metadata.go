@@ -26,7 +26,7 @@ func (t *appstore) GetVersionMetadata(input GetVersionMetadataInput) (GetVersion
 
 	guid := strings.ReplaceAll(strings.ToUpper(macAddr), ":", "")
 
-	res, err := t.sendDownloadProduct(input.Account, input.App, guid, input.VersionID)
+	res, err := t.sendDownloadProduct(input.Account, input.App, guid, input.VersionID, PlatformIPhone)
 	if err != nil {
 		return GetVersionMetadataOutput{}, err
 	}

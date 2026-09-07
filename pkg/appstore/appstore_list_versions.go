@@ -24,7 +24,7 @@ func (t *appstore) ListVersions(input ListVersionsInput) (ListVersionsOutput, er
 
 	guid := strings.ReplaceAll(strings.ToUpper(macAddr), ":", "")
 
-	res, err := t.sendDownloadProduct(input.Account, input.App, guid, "")
+	res, err := t.sendDownloadProduct(input.Account, input.App, guid, "", PlatformIPhone)
 	if err != nil {
 		return ListVersionsOutput{}, err
 	}
