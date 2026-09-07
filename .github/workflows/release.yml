@@ -7,12 +7,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  get_version:
+get_version:
     name: Get version
     runs-on: ubuntu-latest
     steps:
       - id: set_output
-        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/v}
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          elif [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+            VERSION="${BRANCH_NAME//\//-}"
+          else
+            VERSION="${GITHUB_SHA::7}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
     outputs:
       version: ${{ steps.set_output.outputs.version }}
   test:
